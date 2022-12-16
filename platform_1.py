@@ -1,4 +1,5 @@
 import pygame
+import math
 
 # Initialize
 pygame.init()
@@ -20,8 +21,9 @@ class Player():
         self.can_jump = True
         self.jumping = False
         self.falling = False
-        self.jump_height = 200
-        self.velocity = 9
+        self.jump_height = 250
+        self.speed = 3
+        self.jumping_speed = 15
 
     def draw(self, screen):
         if self.forward == False:
@@ -33,28 +35,23 @@ class Player():
         key_pressed = pygame.key.get_pressed()
         if key_pressed[pygame.K_RIGHT]:
             self.forward = True
-            self.position[0] += 4
+            self.position[0] += self.speed
         if key_pressed[pygame.K_LEFT]:
             self.forward = False
-            self.position[0] -= 4
+            self.position[0] -= self.speed
         if key_pressed[pygame.K_SPACE] and self.can_jump:
             self.can_jump = False
             self.jumping = True
 
         if self.jumping:
-            self.position[1] -= self.velocity
-            if self.position[1] > game_floor - (self.jump_height // 2):
-                self.position[1] -= 3
+            self.position[1] -= self.jumping_speed * ((self.position[1] / game_floor) ** 1.5)
 
         if self.falling:
-            self.position[1] += self.velocity
-            if self.position[1] > game_floor - (self.jump_height // 2):
-                self.position[1] += 3
+            self.position[1] += self.jumping_speed * ((self.position[1] / game_floor) ** 1.5)
 
         if self.position[1] <= game_floor - self.jump_height:
             self.jumping = False
             self.falling = True
-
 
         if self.position[1] > game_floor:
             self.position[1] = game_floor
