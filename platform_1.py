@@ -10,8 +10,6 @@ clock = pygame.time.Clock()
 game_floor = screen.get_height() - 200
 
 # Global Variables
-background = pygame.image.load('images/background.jpg')
-background = pygame.transform.scale(background, (1200, 800))
 game_over = False
 cloud_images = [
     pygame.image.load('images/cloud1.png'),
@@ -35,19 +33,24 @@ class Player():
         self.fireballs = []
 
     def draw(self, screen):
-        if self.forward == False:
-            screen.blit(self.image_flipped, self.position)
-        else:
+        if self.forward == True:
             screen.blit(self.image, self.position)
+        else:
+            screen.blit(self.image_flipped, self.position)
 
     def update(self):
         key_pressed = pygame.key.get_pressed()
         if key_pressed[pygame.K_RIGHT]:
             self.forward = True
-            self.position[0] += self.speed
+
+            if self.position[0] <= screen.get_width() // 2:
+                self.position[0] += self.speed
+
         if key_pressed[pygame.K_LEFT]:
             self.forward = False
             self.position[0] -= self.speed
+            if self.position[0] < 0:
+                self.position[0] = 0
 
         if key_pressed[pygame.K_SPACE] and self.can_jump:
             self.can_jump = False
@@ -72,14 +75,18 @@ class Fireball():
     def __init__(self, position, player):
         self.speed = 10
         self.size = 25
+        self.forward = player.forward
         self.position = []
         self.position.append(position[0] + (self.size // 2) + (player.image.get_width() // 2))
         self.position.append(position[1] + (self.size // 2) + (player.image.get_height() // 2))
 
     def update(self):
-        self.position[0] += self.speed
+        if self.forward == True:
+            self.position[0] += self.speed
+        else:
+            self.position[0] -= self.speed
 
-    def draw(self):
+    def draw(self, screen):
         pygame.draw.circle(screen, (0, 100, 200), [self.position[0], self.position[1]], self.size)
         pygame.draw.circle(screen, (150, 100, 200), [self.position[0], self.position[1]], self.size // 1.25)
         pygame.draw.circle(screen, (255, 150, 255), [self.position[0], self.position[1]], self.size // 1.75)
@@ -100,17 +107,35 @@ class Enemy():
 
 class Cloud():
     def __init__(self):
-        self.position = [screen.get_width(), random.randint(0, 300)]
+        self.position = [screen.get_width(), random.randint(0, 400)]
         self.size = random.randint(50, 200)
         self.image = cloud_images[random.randint(0, len(cloud_images) - 1)]
         self.scaled_image = pygame.transform.scale(self.image, (self.image.get_width() * (self.size / 100), self.image.get_height() * (self.size / 100)))
-        self.speed = 2 * (self.size / 100)
+        self.speed = 1 * (self.size / 100)
 
     def update(self):
         self.position[0] -= self.speed
 
     def draw(self, screen):
         screen.blit(self.scaled_image, self.position)
+
+class Background():
+    def __init__(self):
+        self.image = pygame.image.load('images/background.jpg')
+        self.image = pygame.transform.scale(self.image, (1500, 850))
+        self.position = 0
+        self.timer = 0
+        self.speed = 4
+
+    def update(self, player):
+        key_pressed = pygame.key.get_pressed()
+        if player.position[0] >= screen.get_width() // 2 and key_pressed[pygame.K_RIGHT]:
+                self.position -= self.speed
+        if self.position <= - 250:
+            self.position = 0
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.position, 0))
 
 # Functions
 
@@ -119,6 +144,7 @@ player = Player([200, game_floor])
 enemy = Enemy()
 clouds = []
 clouds.append(Cloud())
+background = Background()
 
 # Game Loop
 while not game_over:
@@ -133,10 +159,9 @@ while not game_over:
             if e.key == pygame.K_f:
                 player.fireballs.append(Fireball(Vector2(player.position), player))
 
-
     # Draw Background
-    pygame.draw.rect(screen, (0, 0, 0), [0, 0, screen.get_width(), screen.get_height()])
-    screen.blit(background, (0, 0))
+    background.update(player)
+    background.draw(screen)
 
     # Clouds Update
     if random.randint(0, 500) < 5:
@@ -144,6 +169,8 @@ while not game_over:
     for c in clouds:
         c.update()
         c.draw(screen)
+        if c.position[0] < 0 - c.scaled_image.get_width():
+            clouds.remove(c)
 
     # Enemy Update
     enemy.update()
@@ -156,9 +183,9 @@ while not game_over:
     # Fireball Update
     for f in player.fireballs:
         f.update()
-        f.draw()
-        if f.position[1] > screen.get_width():
-            player.fireballs[f].remove()
+        f.draw(screen)
+        if f.position[0] > screen.get_width():
+            player.fireballs.remove(f)
 
     pygame.display.update()
 
