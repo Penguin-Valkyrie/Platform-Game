@@ -18,6 +18,9 @@ game_floor = screen.get_height() - 200
 total_distance = 0
 font = pygame.font.SysFont('Arial', 32)
 
+enemy_likelihood = 2 #if random.randint(0, 500) < enemy_likelihood
+
+
 # Classes
 class Player():
     def __init__(self, position):
@@ -98,7 +101,7 @@ class Fireball():
 class Enemy():
     def __init__(self):
         self.image = pygame.image.load('images/enemy1.png')
-        self.position = [screen.get_width() - 100, game_floor]
+        self.position = [screen.get_width() + 50, game_floor]
         self.speed = 3
 
     def update(self):
@@ -203,6 +206,9 @@ while not game_over:
             clouds.remove(c)
 
     # Enemy Update
+    if random.randint(0, 500) < enemy_likelihood + (total_distance // 5000):
+        enemy.append(Enemy())
+
     for e in enemy:
         e.update()
         e.draw(screen)
@@ -215,11 +221,11 @@ while not game_over:
     for f in player.fireballs:
         f.update()
         f.draw(screen)
-        if f.position[0] > screen.get_width():
-            player.fireballs.remove(f)
         for e in enemy:
             if collision_detection(f, e):
                 enemy.remove(e)
+                player.fireballs.remove(f)
+            if f.position[0] > screen.get_width() and player.fireballs.__contains__(f):
                 player.fireballs.remove(f)
 
     pygame.display.update()
