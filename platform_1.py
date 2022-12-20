@@ -35,6 +35,7 @@ class Player():
         self.speed = 3
         self.jumping_speed = 15
         self.fireballs = []
+        self.arcane_magic = []
 
     def draw(self, screen):
         if self.forward == True:
@@ -78,16 +79,42 @@ class Player():
 class Fireball():
     def __init__(self, position, player):
         self.speed = 10
-        self.size = 25
+        self.size = 50
+        self.image = pygame.image.load('images/fireball.png')
+        self.image = pygame.transform.scale(self.image, (self.size, self.size))
         self.forward = player.forward
         self.position = []
         if player.forward == False:
-            self.position.append(position[0] + (self.size // 2) )
+            self.position.append(position[0] - (self.size))
             self.position.append(position[1] + (player.image.get_height() // 2) - (self.size // 2) )
         else:
-            self.position.append(position[0] + (player.image.get_width() // 2) + (self.size // 2) )
+            self.position.append(position[0] + (player.image.get_width()))
             self.position.append(position[1] + (player.image.get_height() // 2) - (self.size // 2) )
-        self.image = pygame.image.load('images/fireball.png')
+
+
+    def update(self):
+        if self.forward == True:
+            self.position[0] += self.speed
+        else:
+            self.position[0] -= self.speed
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.position[0], self.position[1]))
+
+class Arcane_Magic():
+    def __init__(self, position, player, forward):
+        self.speed = 8
+        self.size = 25
+        self.image = pygame.image.load('images/arcane.png')
+        self.image = pygame.transform.scale(self.image, (self.size, self.size))
+        self.position = []
+        self.forward = forward
+        if forward == False:
+            self.position.append(position[0] - (self.size))
+            self.position.append(position[1] + (player.image.get_height() // 2) - (self.size // 2) )
+        else:
+            self.position.append(position[0] + (player.image.get_width()))
+            self.position.append(position[1] + (player.image.get_height() // 2) - (self.size // 2) )
 
     def update(self):
         if self.forward == True:
@@ -137,7 +164,7 @@ class Background():
         key_pressed = pygame.key.get_pressed()
         if player.position[0] >= screen.get_width() // 2 and key_pressed[pygame.K_RIGHT]:
                 self.position -= self.speed
-                total_distance += self.speed
+                total_distance += self.speed * 10
         if self.position <= self.image.get_width() * -1:
             self.position = 0
 
@@ -187,6 +214,10 @@ while not game_over:
         if e.type == pygame.KEYDOWN:
             if e.key == pygame.K_f:
                 player.fireballs.append(Fireball(Vector2(player.position), player))
+            
+            elif e.key == pygame.K_d:
+                player.arcane_magic.append(Arcane_Magic(Vector2(player.position), player, True))
+                player.arcane_magic.append(Arcane_Magic(Vector2(player.position), player, False))
 
     # Draw Background
     total_distance = background.update(player, total_distance)
@@ -208,7 +239,7 @@ while not game_over:
     # Enemy Update
     if random.randint(0, 500) < enemy_likelihood + (total_distance // 5000):
         enemy.append(Enemy())
-
+    
     for e in enemy:
         e.update()
         e.draw(screen)
@@ -224,9 +255,24 @@ while not game_over:
         for e in enemy:
             if collision_detection(f, e):
                 enemy.remove(e)
-                player.fireballs.remove(f)
+                if player.fireballs.__contains__(f):
+                    player.fireballs.remove(f)
+
             if f.position[0] > screen.get_width() and player.fireballs.__contains__(f):
                 player.fireballs.remove(f)
+
+    # Arcane Update
+    for a in player.arcane_magic:
+        a.update()
+        a.draw(screen)
+        for e in enemy:
+            if collision_detection(a, e):
+                enemy.remove(e)
+                if player.arcane_magic.__contains__(a):
+                    player.arcane_magic.remove(a)
+
+            if a.position[0] > screen.get_width() and player.arcane_magic.__contains__(a):
+                player.arcane_magic.remove(a)
 
     pygame.display.update()
 
