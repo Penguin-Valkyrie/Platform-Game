@@ -17,13 +17,14 @@ cloud_images = [
 game_floor = screen.get_height() - 200
 total_distance = 0
 font = pygame.font.SysFont('Arial', 32)
-
 enemy_likelihood = 2 #if random.randint(0, 500) < enemy_likelihood
-
+defeated = False
+defeat_message = font.render("Defeated!", True, (255, 255, 255))
 
 # Classes
 class Player():
     def __init__(self, position):
+        self.health = 5
         self.position = position
         self.image = pygame.image.load('images/character.png')
         self.image_flipped = pygame.transform.flip(self.image, True, False)
@@ -181,14 +182,14 @@ def collision_detection(object1, object2):
     # Object2 is the object being hit
 
     # First two are top left corner of Object1, then they move clockwise
-    if object2.position[0] + 2 < object1.position[0] < object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 < object1.position[1] < object2.position[1] + object2.image.get_height() - 2 or \
-        object2.position[0] + 2 < object1.position[0] + object1.image.get_width() < object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 < object1.position[1] < object2.position[1] + object2.image.get_height() - 2 or \
-        object2.position[0] + 2 < object1.position[0] + object1.image.get_width() < object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 < object1.position[1] + object1.image.get_height() < object2.position[1] + object2.image.get_height() - 2 or \
-        object2.position[0] + 2 < object1.position[0] < object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 < object1.position[1] + object1.image.get_height() < object2.position[1] + object2.image.get_height():
+    if object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
+        object2.position[1] + 2 <= object1.position[1] <= object2.position[1] + object2.image.get_height() - 2 or \
+        object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
+        object2.position[1] + 2 <= object1.position[1] <= object2.position[1] + object2.image.get_height() - 2 or \
+        object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
+        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height() - 2 or \
+        object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
+        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height():
         return True
     else:
         return False
@@ -223,10 +224,12 @@ while not game_over:
     total_distance = background.update(player, total_distance)
     background.draw(screen)
 
-    # Distance Update
+    # Text Update
     distance_message = font.render('Distance: ' + str(total_distance), True, (255, 255, 255))
     screen.blit(distance_message, (10, 10))
-
+    health_message = font.render('Health: ' + str(player.health), True, (255, 255, 255))
+    screen.blit(health_message, (screen.get_width() - health_message.get_width() - 10, 10))
+    
     # Clouds Update
     if random.randint(0, 500) < 2:
         clouds.append(Cloud())
@@ -236,6 +239,12 @@ while not game_over:
         if c.position[0] < 0 - c.scaled_image.get_width():
             clouds.remove(c)
 
+    # Check if defeated
+    if defeated == True:
+        screen.blit(defeat_message, (screen.get_width() // 2 - defeat_message.get_width() // 2, screen.get_height() // 2))
+        pygame.display.update()
+        continue
+
     # Enemy Update
     if random.randint(0, 500) < enemy_likelihood + (total_distance // 5000):
         enemy.append(Enemy())
@@ -243,10 +252,16 @@ while not game_over:
     for e in enemy:
         e.update()
         e.draw(screen)
+        if collision_detection(e, player):
+            player.health -= 1
+            enemy.remove(e)
 
     # Player Update
     player.update()
     player.draw(screen)
+
+    if player.health == 0:
+        defeated = True
 
     # Fireball Update
     for f in player.fireballs:
