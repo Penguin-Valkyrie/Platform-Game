@@ -12,7 +12,8 @@ clock = pygame.time.Clock()
 game_over = False
 cloud_images = [
     pygame.image.load('images/cloud1.png'),
-    pygame.image.load('images/cloud2.png')
+    pygame.image.load('images/cloud2.png'),
+    pygame.image.load('images/cloud3.png')
 ]
 game_floor = screen.get_height() - 200
 total_distance = 0
