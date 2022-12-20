@@ -36,7 +36,7 @@ class Player():
         self.jumping = False
         self.falling = False
         self.jump_height = 275
-        self.speed = 3
+        self.speed = 4
         self.jumping_speed = 15
         self.fireballs = []
         self.attack_buffer = 0
@@ -48,6 +48,11 @@ class Player():
             screen.blit(self.image, self.position)
         else:
             screen.blit(self.image_flipped, self.position)
+        
+        # Draw Attach Buffer
+        pygame.draw.rect(screen, (255, 0, 0), [self.position[0] - 15, self.position[1], 10, 100])
+        pygame.draw.rect(screen, (0, 0, 0), [self.position[0] - 15, self.position[1], 10, (self.attack_buffer / 240) * 100])
+        
 
     def update(self):
 
@@ -279,7 +284,7 @@ while not game_over:
     screen.blit(distance_message, (10, 10))
     health_message = font.render('Health: ' + str(player.health), True, (255, 255, 255))
     screen.blit(health_message, (screen.get_width() - health_message.get_width() - 10, 10))
-    
+
     # Clouds Update
     if random.randint(0, 500) < 2:
         clouds.append(Cloud())
