@@ -15,7 +15,7 @@ cloud_images = [
     pygame.image.load('images/cloud2.png'),
     pygame.image.load('images/cloud3.png')
 ]
-game_floor = screen.get_height() - 200
+game_floor = screen.get_height() - 100
 total_distance = 0
 font = pygame.font.SysFont('Arial', 32)
 enemy_likelihood = 2 #if random.randint(0, 500) < enemy_likelihood
@@ -24,11 +24,13 @@ defeat_message = font.render("Defeated!", True, (255, 255, 255))
 
 # Classes
 class Player():
-    def __init__(self, position):
+    def __init__(self):
         self.health = 5
-        self.position = position
         self.image = pygame.image.load('images/character.png')
         self.image_flipped = pygame.transform.flip(self.image, True, False)
+        self.position = []
+        self.position.append(100)
+        self.position.append(game_floor - self.image.get_height())
         self.forward = True # False if moving to the left
         self.can_jump = True
         self.jumping = False
@@ -37,7 +39,9 @@ class Player():
         self.speed = 3
         self.jumping_speed = 15
         self.fireballs = []
+        self.attack_buffer = 0
         self.arcane_magic = []
+        self.holy = []
 
     def draw(self, screen):
         if self.forward == True:
@@ -46,6 +50,10 @@ class Player():
             screen.blit(self.image_flipped, self.position)
 
     def update(self):
+
+        if self.attack_buffer > 0:
+            self.attack_buffer -= 1
+
         key_pressed = pygame.key.get_pressed()
         if key_pressed[pygame.K_RIGHT]:
             self.forward = True
@@ -73,8 +81,8 @@ class Player():
             self.jumping = False
             self.falling = True
 
-        if self.position[1] > game_floor:
-            self.position[1] = game_floor
+        if self.position[1] > game_floor - self.image.get_height():
+            self.position[1] = game_floor - self.image.get_height()
             self.falling = False
             self.can_jump = True
 
@@ -127,11 +135,47 @@ class Arcane_Magic():
     def draw(self, screen):
         screen.blit(self.image, (self.position[0], self.position[1]))
 
+class Holy():
+    def __init__(self, position, player, forward):
+        self.health = 10
+        self.speed = 12
+        self.size = 25
+        self.image = pygame.image.load('images/holy.png')
+        self.image = pygame.transform.scale(self.image, (self.size, self.size))
+        self.position = []
+        self.forward = forward
+        if forward == False:
+            self.position.append(position[0] - (self.size))
+            self.position.append(position[1] + (player.image.get_height() // 2) - (self.size // 2) )
+        else:
+            self.position.append(position[0] + (player.image.get_width()))
+            self.position.append(position[1] + (player.image.get_height() // 2) - (self.size // 2) )
+
+    def update(self):
+        if self.forward == True:
+            self.position[0] += self.speed
+        else:
+            self.position[0] -= self.speed
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.position[0], self.position[1]))
+
 class Enemy():
-    def __init__(self):
-        self.image = pygame.image.load('images/enemy1.png')
-        self.position = [screen.get_width() + 50, game_floor]
-        self.speed = 3
+    def __init__(self, type):
+        if type == 1:
+            self.image = pygame.image.load('images/enemy2.png')
+            self.speed = 2
+            self.health = 2
+        elif type == 2:
+            self.image = pygame.image.load('images/enemy3.png')
+            self.speed = 1
+            self.health = 3
+        else:
+            self.image = pygame.image.load('images/enemy1.png')
+            self.speed = 3
+            self.health = 1
+        self.position = [screen.get_width() + 50, game_floor - self.image.get_height()]
+        
 
     def update(self):
         self.position[0] -= self.speed
@@ -197,9 +241,9 @@ def collision_detection(object1, object2):
     
 
 # Global Variables
-player = Player([200, game_floor])
+player = Player()
 enemy = []
-enemy.append(Enemy())
+enemy.append(Enemy(0))
 clouds = []
 clouds.append(Cloud())
 background = Background()
@@ -217,9 +261,14 @@ while not game_over:
             if e.key == pygame.K_f:
                 player.fireballs.append(Fireball(Vector2(player.position), player))
             
-            elif e.key == pygame.K_d:
+            elif e.key == pygame.K_d and player.attack_buffer <= 0:
                 player.arcane_magic.append(Arcane_Magic(Vector2(player.position), player, True))
                 player.arcane_magic.append(Arcane_Magic(Vector2(player.position), player, False))
+                player.attack_buffer = 240
+
+            elif e.key == pygame.K_s and player.attack_buffer <= 0:
+                player.holy.append(Holy(Vector2(player.position), player, True))
+                player.attack_buffer = 240
 
     # Draw Background
     total_distance = background.update(player, total_distance)
@@ -248,11 +297,18 @@ while not game_over:
 
     # Enemy Update
     if random.randint(0, 500) < enemy_likelihood + (total_distance // 5000):
-        enemy.append(Enemy())
+        enemy.append(Enemy(0))
+    elif random.randint(0, 500) < (enemy_likelihood + (total_distance // 5000)) // 2 and total_distance > 50000:
+        enemy.append(Enemy(1))
+    elif random.randint(0, 500) < (enemy_likelihood + (total_distance // 5000)) // 5 and total_distance > 150000:
+        enemy.append(Enemy(2))
     
     for e in enemy:
         e.update()
         e.draw(screen)
+        if e.health <= 0:
+            enemy.remove(e)
+            continue
         if collision_detection(e, player):
             player.health -= 1
             enemy.remove(e)
@@ -270,7 +326,7 @@ while not game_over:
         f.draw(screen)
         for e in enemy:
             if collision_detection(f, e):
-                enemy.remove(e)
+                e.health -= 1
                 if player.fireballs.__contains__(f):
                     player.fireballs.remove(f)
 
@@ -283,12 +339,27 @@ while not game_over:
         a.draw(screen)
         for e in enemy:
             if collision_detection(a, e):
-                enemy.remove(e)
+                e.health -= 1
                 if player.arcane_magic.__contains__(a):
                     player.arcane_magic.remove(a)
 
-            if a.position[0] > screen.get_width() and player.arcane_magic.__contains__(a):
+        if a.position[0] > screen.get_width() and player.arcane_magic.__contains__(a):
                 player.arcane_magic.remove(a)
+    
+    # Holy Update
+    for h in player.holy:
+        h.update()
+        h.draw(screen)
+        for e in enemy:
+            if collision_detection(h, e):
+                e.health -= 1
+                h.health -= 1
+
+        if h.position[0] > screen.get_width() and player.holy.__contains__(h):
+                player.holy.remove(h)
+        
+        if h.health <= 0 and player.holy.__contains__(h):
+            player.holy.remove(h)
 
     pygame.display.update()
 
