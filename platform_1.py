@@ -141,15 +141,15 @@ class Arcane_Magic():
         screen.blit(self.image, (self.position[0], self.position[1]))
 
 class Holy():
-    def __init__(self, position, player, forward):
+    def __init__(self, position, player):
         self.health = 10
         self.speed = 12
         self.size = 25
         self.image = pygame.image.load('images/holy.png')
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
         self.position = []
-        self.forward = forward
-        if forward == False:
+        self.forward = player.forward
+        if self.forward == False:
             self.position.append(position[0] - (self.size))
             self.position.append(position[1] + (player.image.get_height() // 2) - (self.size // 2) )
         else:
@@ -209,13 +209,12 @@ class Background():
         self.image = pygame.transform.scale(self.image, (1500, 850))
         self.position = 0
         self.timer = 0
-        self.speed = 4
 
     def update(self, player, total_distance):
         key_pressed = pygame.key.get_pressed()
         if player.position[0] >= screen.get_width() // 2 and key_pressed[pygame.K_RIGHT]:
-                self.position -= self.speed
-                total_distance += self.speed * 10
+                self.position -= player.speed
+                total_distance += player.speed
         if self.position <= self.image.get_width() * -1:
             self.position = 0
 
@@ -272,7 +271,7 @@ while not game_over:
                 player.attack_buffer = 240
 
             elif e.key == pygame.K_s and player.attack_buffer <= 0:
-                player.holy.append(Holy(Vector2(player.position), player, True))
+                player.holy.append(Holy(Vector2(player.position), player))
                 player.attack_buffer = 240
 
     # Draw Background
