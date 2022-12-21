@@ -17,8 +17,9 @@ cloud_images = [
 ]
 game_floor = screen.get_height() - 100
 total_distance = 0
-font = pygame.font.SysFont('Arial', 32)
+font = pygame.font.SysFont('Arial', 48)
 enemy_likelihood = 2 #if random.randint(0, 500) < enemy_likelihood
+coin_likelihood = 2 #if random.randint(0, 500) < enemy_likelihood
 defeated = False
 defeat_message = font.render("Defeated!", True, (255, 255, 255))
 
@@ -42,6 +43,8 @@ class Player():
         self.attack_buffer = 0
         self.arcane_magic = []
         self.holy = []
+        self.coins_collected = 0
+        self.coins_speed_increase = True
 
     def draw(self, screen):
         if self.forward == True:
@@ -55,6 +58,13 @@ class Player():
         
 
     def update(self):
+
+        if self.coins_collected >= 20 and self.coins_collected % 20 == 0 and self.coins_speed_increase:
+            self.coins_speed_increase = False
+            self.speed += .5
+
+        if self.coins_collected % 20 == 1:
+            self.coins_speed_increase = True
 
         if self.attack_buffer > 0:
             self.attack_buffer -= 1
@@ -224,6 +234,20 @@ class Background():
         screen.blit(self.image, (self.position, 0))
         screen.blit(self.image, (self.position + self.image.get_width(), 0))
 
+class Coin():
+    def __init__(self, screen, player):
+        self.image = pygame.image.load('images/coin.png')
+        self.position = []
+        self.position.append(screen.get_width() + 100)
+        self.position.append(game_floor - player.image.get_height() - (player.jump_height * .75))
+        self.speed = player.speed
+
+    def update(self):
+        self.position[0] -= self.speed
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.position[0], self.position[1]))
+
 # Functions
 
 def collision_detection(object1, object2):
@@ -251,6 +275,8 @@ enemy.append(Enemy(0))
 clouds = []
 clouds.append(Cloud())
 background = Background()
+coins = []
+
 
 # Game Loop
 while not game_over:
@@ -283,6 +309,8 @@ while not game_over:
     screen.blit(distance_message, (10, 10))
     health_message = font.render('Health: ' + str(player.health), True, (255, 255, 255))
     screen.blit(health_message, (screen.get_width() - health_message.get_width() - 10, 10))
+    coins_message = font.render('Coins: ' + str(player.coins_collected), True, (255, 255, 255))
+    screen.blit(coins_message, (screen.get_width() - health_message.get_width() - 10, 20 + distance_message.get_height()))
 
     # Clouds Update
     if random.randint(0, 500) < 2:
@@ -298,6 +326,17 @@ while not game_over:
         screen.blit(defeat_message, (screen.get_width() // 2 - defeat_message.get_width() // 2, screen.get_height() // 2))
         pygame.display.update()
         continue
+
+    # Coin Update
+    if random.randint(0, 500) < coin_likelihood + (total_distance // 5000):
+        coins.append(Coin(screen, player))
+
+    for c in coins:
+        c.update()
+        c.draw(screen)
+        if collision_detection(player, c):
+            coins.remove(c)
+            player.coins_collected += 1
 
     # Enemy Update
     if random.randint(0, 500) < enemy_likelihood + (total_distance // 5000):
@@ -349,7 +388,7 @@ while not game_over:
 
         if a.position[0] > screen.get_width() and player.arcane_magic.__contains__(a):
                 player.arcane_magic.remove(a)
-    
+
     # Holy Update
     for h in player.holy:
         h.update()
