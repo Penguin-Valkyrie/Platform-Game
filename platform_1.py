@@ -305,12 +305,12 @@ while not game_over:
     background.draw(screen)
 
     # Text Update
-    distance_message = font.render('Distance: ' + str(total_distance), True, (255, 255, 255))
+    distance_message = font.render('Distance: ' + str(int(total_distance // 1)), True, (255, 255, 255))
     screen.blit(distance_message, (10, 10))
     health_message = font.render('Health: ' + str(player.health), True, (255, 255, 255))
     screen.blit(health_message, (screen.get_width() - health_message.get_width() - 10, 10))
     coins_message = font.render('Coins: ' + str(player.coins_collected), True, (255, 255, 255))
-    screen.blit(coins_message, (screen.get_width() - health_message.get_width() - 10, 20 + distance_message.get_height()))
+    screen.blit(coins_message, (screen.get_width() - coins_message.get_width() - 10, 20 + distance_message.get_height()))
 
     # Clouds Update
     if random.randint(0, 500) < 2:
@@ -341,9 +341,9 @@ while not game_over:
     # Enemy Update
     if random.randint(0, 500) < enemy_likelihood + (total_distance // 5000):
         enemy.append(Enemy(0))
-    elif random.randint(0, 500) < (enemy_likelihood + (total_distance // 5000)) // 2 and total_distance > 50000:
+    elif random.randint(0, 500) < (enemy_likelihood + (total_distance // 5000)) // 2 and total_distance > 10000:
         enemy.append(Enemy(1))
-    elif random.randint(0, 500) < (enemy_likelihood + (total_distance // 5000)) // 5 and total_distance > 150000:
+    elif random.randint(0, 500) < (enemy_likelihood + (total_distance // 5000)) // 5 and total_distance > 25000:
         enemy.append(Enemy(2))
     
     for e in enemy:
