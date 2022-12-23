@@ -1,6 +1,7 @@
 import pygame
 import random
 from pygame import Vector2
+from pygame._sdl2 import touch
 
 # Initialize
 pygame.init()
@@ -55,7 +56,21 @@ class Player():
         # Draw Attach Buffer
         pygame.draw.rect(screen, (255, 0, 0), [self.position[0] - 15, self.position[1], 10, 100])
         pygame.draw.rect(screen, (0, 0, 0), [self.position[0] - 15, self.position[1], 10, (self.attack_buffer / 240) * 100])
-        
+
+    def advance(self):
+        self.forward = True
+        if self.position[0] <= screen.get_width() // 2:
+            self.position[0] += self.speed
+
+    def retreat(self):
+        self.forward = False
+        self.position[0] -= self.speed
+        if self.position[0] < 0:
+            self.position[0] = 0
+
+    def jump(self):
+        self.can_jump = False
+        self.jumping = True
 
     def update(self):
 
@@ -68,23 +83,6 @@ class Player():
 
         if self.attack_buffer > 0:
             self.attack_buffer -= 1
-
-        key_pressed = pygame.key.get_pressed()
-        if key_pressed[pygame.K_RIGHT]:
-            self.forward = True
-
-            if self.position[0] <= screen.get_width() // 2:
-                self.position[0] += self.speed
-
-        if key_pressed[pygame.K_LEFT]:
-            self.forward = False
-            self.position[0] -= self.speed
-            if self.position[0] < 0:
-                self.position[0] = 0
-
-        if key_pressed[pygame.K_SPACE] and self.can_jump:
-            self.can_jump = False
-            self.jumping = True
 
         if self.jumping:
             self.position[1] -= self.jumping_speed * ((self.position[1] / game_floor) ** 1.75)
@@ -220,13 +218,13 @@ class Background():
         self.position = 0
         self.timer = 0
 
-    def update(self, player, total_distance):
-        key_pressed = pygame.key.get_pressed()
-        if player.position[0] >= screen.get_width() // 2 and key_pressed[pygame.K_RIGHT]:
-                self.position -= player.speed
-                total_distance += player.speed
+    def update(self):
         if self.position <= self.image.get_width() * -1:
             self.position = 0
+
+    def advance(self, player, total_distance):
+        background.position -= player.speed
+        total_distance += player.speed
 
         return total_distance
 
@@ -299,9 +297,35 @@ while not game_over:
             elif e.key == pygame.K_s and player.attack_buffer <= 0:
                 player.holy.append(Holy(Vector2(player.position), player))
                 player.attack_buffer = 240
+        
+    
+    key_pressed = pygame.key.get_pressed()
+
+    if player.position[0] >= screen.get_width() // 2 and key_pressed[pygame.K_RIGHT]:
+        total_distance = background.advance(player, total_distance)
+
+    elif key_pressed[pygame.K_RIGHT]:
+        player.advance()
+
+    if key_pressed[pygame.K_LEFT]:
+        player.retreat()
+
+    if key_pressed[pygame.K_SPACE] and player.can_jump:
+        player.jump()
+
+    button_pressed = pygame.mouse.get_pressed()
+
+    if player.position[0] >= screen.get_width() // 2 and button_pressed[0] and pygame.mouse.get_pos()[0] > screen.get_width() / 2:
+        total_distance = background.advance(player, total_distance)
+    
+    elif button_pressed[0] and pygame.mouse.get_pos()[0] < screen.get_width() / 2:
+        player.retreat()
+
+    elif button_pressed[0] and pygame.mouse.get_pos()[0] > screen.get_width() / 2:
+        player.advance()
 
     # Draw Background
-    total_distance = background.update(player, total_distance)
+    background.update()
     background.draw(screen)
 
     # Text Update
