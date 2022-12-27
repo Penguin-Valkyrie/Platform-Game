@@ -27,20 +27,39 @@ defeat_message = font.render("Defeated!", True, (255, 255, 255))
 
 # Functions
 
-def collision_detection(object1, object2):
+def collision_detection(object1, object2, screen = None, object1BottomOnly = False):
     # Object1 is the object whose corners are being tested
     # Object2 is the object being hit
 
+    if screen is not None:
+        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0], object2.position[1], 5, 5])
+        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0] + object2.image.get_width(), object2.position[1], 5, 5])
+        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0] + object2.image.get_width(), object2.position[1] + object2.image.get_height(), 5, 5])
+        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0], object2.position[1] + object2.image.get_height(), 5, 5])
+        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0], object1.position[1], 5, 5])
+        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0] + object1.image.get_width(), object1.position[1], 5, 5])
+        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0] + object1.image.get_width(), object1.position[1] + object1.image.get_height(), 5, 5])
+        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0], object1.position[1] + object1.image.get_height(), 5, 5])
+
     # First two are top left corner of Object1, then they move clockwise
-    if object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
+    if (object1BottomOnly == False) and (object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
         object2.position[1] + 2 <= object1.position[1] <= object2.position[1] + object2.image.get_height() - 2 or \
         object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
         object2.position[1] + 2 <= object1.position[1] <= object2.position[1] + object2.image.get_height() - 2 or \
         object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
         object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height() - 2 or \
         object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height():
+        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height()):
+
         return True
+
+    elif(object1BottomOnly == True) and (object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
+        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height() - 2 or \
+        object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
+        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height()):
+
+        return True
+
     else:
         return False
 
@@ -54,11 +73,10 @@ class Player():
         self.forward = True # False if moving to the left
         self.can_jump = True
         self.jumping = False
-        self.falling = False
         self.jump_height = 275
         self.floor = game_floor
         self.speed = 4
-        self.jumping_speed = 10
+        self.jumping_speed = 12
         self.fireballs = []
         self.attack_buffer = 0
         self.arcane_magic = []
@@ -103,32 +121,25 @@ class Player():
         if self.attack_buffer > 0:
             self.attack_buffer -= 1
 
+        if self.jumping:
+            self.position[1] -= self.jumping_speed * (((self.position[1] + self.image.get_width()) / self.floor) ** 1.75)
+        else:
+            for p in platforms:
+                if collision_detection(self, p, screen, True):
+                    self.can_jump = True
+                    self.floor = self.position[1] + self.image.get_height()
+                    return
+            self.position[1] += self.jumping_speed * (((self.position[1] + self.image.get_width()) / self.floor) ** 1.75)
+
         if self.position[1] <= self.floor - self.jump_height:
             self.jumping = False
-            self.falling = True
 
         if self.position[1] + self.image.get_height() > self.floor:
             self.position[1] = self.floor - self.image.get_height()
             if self.floor == game_floor:
-                self.falling = False
                 self.can_jump = True
             else:
                 self.floor = game_floor
-
-        if self.jumping:
-            self.position[1] -= self.jumping_speed * (((self.position[1] + self.image.get_width()) / self.floor) ** 1.75)
-            print(self.position)
-            print(self.jumping_speed)
-            print(self.floor)
-
-        if self.falling:
-            for p in platforms:
-                if collision_detection(self, p):
-                    self.can_jump = True
-                    self.floor = self.position[1] + self.image.get_height()
-                    self.falling = False
-                    return
-            self.position[1] += self.jumping_speed * (((self.position[1] + self.image.get_width()) / self.floor) ** 1.75)
 
 class Fireball():
     def __init__(self, position, player):
@@ -244,7 +255,7 @@ class Cloud():
 
 class Step_Cloud():
     def __init__(self):
-        self.image = pygame.image.load('images/platform.png')
+        self.image = pygame.image.load('images/Platform Cloud.png')
         self.position = [screen.get_width() - 100, screen.get_height() - self.image.get_height() - 200]
         self.speed = 1
 
