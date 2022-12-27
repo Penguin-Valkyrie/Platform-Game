@@ -16,13 +16,33 @@ cloud_images = [
     pygame.image.load('images/cloud2.png'),
     pygame.image.load('images/cloud3.png')
 ]
-game_floor = screen.get_height() - 100
+game_floor = screen.get_height() - 100 # Image positions are set so their bottom is on the game_floor
 total_distance = 0
 font = pygame.font.SysFont('Arial', 48)
 enemy_likelihood = 2 #if random.randint(0, 500) < enemy_likelihood
 coin_likelihood = 2 #if random.randint(0, 500) < enemy_likelihood
+platform_likelihood = 1 #if random.randint(0, 500) < enemy_likelihood
 defeated = False
 defeat_message = font.render("Defeated!", True, (255, 255, 255))
+
+# Functions
+
+def collision_detection(object1, object2):
+    # Object1 is the object whose corners are being tested
+    # Object2 is the object being hit
+
+    # First two are top left corner of Object1, then they move clockwise
+    if object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
+        object2.position[1] + 2 <= object1.position[1] <= object2.position[1] + object2.image.get_height() - 2 or \
+        object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
+        object2.position[1] + 2 <= object1.position[1] <= object2.position[1] + object2.image.get_height() - 2 or \
+        object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
+        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height() - 2 or \
+        object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
+        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height():
+        return True
+    else:
+        return False
 
 # Classes
 class Player():
@@ -30,16 +50,15 @@ class Player():
         self.health = 5
         self.image = pygame.image.load('images/character.png')
         self.image_flipped = pygame.transform.flip(self.image, True, False)
-        self.position = []
-        self.position.append(100)
-        self.position.append(game_floor - self.image.get_height())
+        self.position = [100, game_floor - self.image.get_height()]
         self.forward = True # False if moving to the left
         self.can_jump = True
         self.jumping = False
         self.falling = False
         self.jump_height = 275
+        self.floor = game_floor
         self.speed = 4
-        self.jumping_speed = 15
+        self.jumping_speed = 10
         self.fireballs = []
         self.attack_buffer = 0
         self.arcane_magic = []
@@ -53,7 +72,7 @@ class Player():
         else:
             screen.blit(self.image_flipped, self.position)
         
-        # Draw Attach Buffer
+        # Draw Attack Buffer
         pygame.draw.rect(screen, (255, 0, 0), [self.position[0] - 15, self.position[1], 10, 100])
         pygame.draw.rect(screen, (0, 0, 0), [self.position[0] - 15, self.position[1], 10, (self.attack_buffer / 240) * 100])
 
@@ -72,7 +91,7 @@ class Player():
         self.can_jump = False
         self.jumping = True
 
-    def update(self):
+    def update(self, platforms):              
 
         if self.coins_collected >= 20 and self.coins_collected % 20 == 0 and self.coins_speed_increase:
             self.coins_speed_increase = False
@@ -84,20 +103,32 @@ class Player():
         if self.attack_buffer > 0:
             self.attack_buffer -= 1
 
-        if self.jumping:
-            self.position[1] -= self.jumping_speed * ((self.position[1] / game_floor) ** 1.75)
-
-        if self.falling:
-            self.position[1] += self.jumping_speed * ((self.position[1] / game_floor) ** 1.75)
-
-        if self.position[1] <= game_floor - self.jump_height:
+        if self.position[1] <= self.floor - self.jump_height:
             self.jumping = False
             self.falling = True
 
-        if self.position[1] > game_floor - self.image.get_height():
-            self.position[1] = game_floor - self.image.get_height()
-            self.falling = False
-            self.can_jump = True
+        if self.position[1] + self.image.get_height() > self.floor:
+            self.position[1] = self.floor - self.image.get_height()
+            if self.floor == game_floor:
+                self.falling = False
+                self.can_jump = True
+            else:
+                self.floor = game_floor
+
+        if self.jumping:
+            self.position[1] -= self.jumping_speed * (((self.position[1] + self.image.get_width()) / self.floor) ** 1.75)
+            print(self.position)
+            print(self.jumping_speed)
+            print(self.floor)
+
+        if self.falling:
+            for p in platforms:
+                if collision_detection(self, p):
+                    self.can_jump = True
+                    self.floor = self.position[1] + self.image.get_height()
+                    self.falling = False
+                    return
+            self.position[1] += self.jumping_speed * (((self.position[1] + self.image.get_width()) / self.floor) ** 1.75)
 
 class Fireball():
     def __init__(self, position, player):
@@ -203,13 +234,25 @@ class Cloud():
         self.size = random.randint(50, 200)
         self.image = cloud_images[random.randint(0, len(cloud_images) - 1)]
         self.scaled_image = pygame.transform.scale(self.image, (self.image.get_width() * (self.size / 100), self.image.get_height() * (self.size / 100)))
-        self.speed = 1 * (self.size / 100)
+        self.speed = (self.size / 100)
 
     def update(self):
         self.position[0] -= self.speed
 
     def draw(self, screen):
         screen.blit(self.scaled_image, self.position)
+
+class Step_Cloud():
+    def __init__(self):
+        self.image = pygame.image.load('images/platform.png')
+        self.position = [screen.get_width() - 100, screen.get_height() - self.image.get_height() - 200]
+        self.speed = 1
+
+    def update(self):
+        self.position[0] -= self.speed
+
+    def draw(self, screen):
+        screen.blit(self.image, self.position)
 
 class Background():
     def __init__(self):
@@ -244,27 +287,7 @@ class Coin():
         self.position[0] -= self.speed
 
     def draw(self, screen):
-        screen.blit(self.image, (self.position[0], self.position[1]))
-
-# Functions
-
-def collision_detection(object1, object2):
-    # Object1 is the object whose corners are being tested
-    # Object2 is the object being hit
-
-    # First two are top left corner of Object1, then they move clockwise
-    if object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] <= object2.position[1] + object2.image.get_height() - 2 or \
-        object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] <= object2.position[1] + object2.image.get_height() - 2 or \
-        object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height() - 2 or \
-        object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height():
-        return True
-    else:
-        return False
-    
+        screen.blit(self.image, (self.position[0], self.position[1]))  
 
 # Global Variables
 player = Player()
@@ -272,6 +295,8 @@ enemy = []
 enemy.append(Enemy(0))
 clouds = []
 clouds.append(Cloud())
+step_clouds = []
+step_clouds.append(Step_Cloud())
 background = Background()
 coins = []
 
@@ -280,6 +305,8 @@ coins = []
 while not game_over:
 
     clock.tick(60)
+
+    # Event Handling
 
     for e in pygame.event.get():
         if e.type == pygame.QUIT:
@@ -344,6 +371,15 @@ while not game_over:
         c.draw(screen)
         if c.position[0] < 0 - c.scaled_image.get_width():
             clouds.remove(c)
+    
+    # Platform Update
+    if random.randint(0, 500) < platform_likelihood:
+        step_clouds.append(Step_Cloud())
+    for s in step_clouds:
+        s.update()
+        s.draw(screen)
+        if s.position[0] < 0 - s.image.get_width():
+            step_clouds.remove(s)
 
     # Check if defeated
     if defeated == True:
@@ -381,7 +417,7 @@ while not game_over:
             enemy.remove(e)
 
     # Player Update
-    player.update()
+    player.update(step_clouds)
     player.draw(screen)
 
     if player.health == 0:
