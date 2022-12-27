@@ -19,11 +19,13 @@ cloud_images = [
 game_floor = screen.get_height() - 100 # Image positions are set so their bottom is on the game_floor
 total_distance = 0
 font = pygame.font.SysFont('Arial', 48)
-enemy_likelihood = 2 #if random.randint(0, 500) < enemy_likelihood
-coin_likelihood = 2 #if random.randint(0, 500) < enemy_likelihood
-platform_likelihood = 1 #if random.randint(0, 500) < enemy_likelihood
+enemy_likelihood = 60 #if random.randint(0, 10000) < enemy_likelihood
+coin_likelihood = 40 #if random.randint(0, 10000) < coin_likelihood
+platform_likelihood = 10 #if random.randint(0, 10000) < platform_likelihood
+cloud_likelihood = 30 #if random.randint(0, 10000) < cloud_likelihood
 defeated = False
 defeat_message = font.render("Defeated!", True, (255, 255, 255))
+world_advance = 0
 
 # Functions
 
@@ -219,21 +221,21 @@ class Enemy():
     def __init__(self, type):
         if type == 1:
             self.image = pygame.image.load('images/enemy2.png')
-            self.speed = 2
+            self.speed = 1
             self.health = 2
         elif type == 2:
             self.image = pygame.image.load('images/enemy3.png')
-            self.speed = 1
+            self.speed = .5
             self.health = 3
         else:
             self.image = pygame.image.load('images/enemy1.png')
-            self.speed = 3
+            self.speed = 2
             self.health = 1
         self.position = [screen.get_width() + 50, game_floor - self.image.get_height()]
         
 
     def update(self):
-        self.position[0] -= self.speed
+        self.position[0] -= self.speed + world_advance
         pass
     
     def draw(self, screen):
@@ -256,11 +258,11 @@ class Cloud():
 class Step_Cloud():
     def __init__(self):
         self.image = pygame.image.load('images/Platform Cloud.png')
-        self.position = [screen.get_width() - 100, screen.get_height() - self.image.get_height() - 200]
+        self.position = [screen.get_width() + self.image.get_width(), screen.get_height() - self.image.get_height() - 200]
         self.speed = 1
 
     def update(self):
-        self.position[0] -= self.speed
+        self.position[0] -= self.speed + world_advance
 
     def draw(self, screen):
         screen.blit(self.image, self.position)
@@ -272,13 +274,11 @@ class Background():
         self.position = 0
         self.timer = 0
 
-    def update(self):
+    def update(self, world_advance, total_distance):
+        self.position -= world_advance
+        total_distance += world_advance
         if self.position <= self.image.get_width() * -1:
             self.position = 0
-
-    def advance(self, player, total_distance):
-        background.position -= player.speed
-        total_distance += player.speed
 
         return total_distance
 
@@ -295,7 +295,7 @@ class Coin():
         self.speed = player.speed
 
     def update(self):
-        self.position[0] -= self.speed
+        self.position[0] -= world_advance
 
     def draw(self, screen):
         screen.blit(self.image, (self.position[0], self.position[1]))  
@@ -317,8 +317,10 @@ while not game_over:
 
     clock.tick(60)
 
-    # Event Handling
+    # Setup
+    world_advance = 0
 
+    # Event Handling
     for e in pygame.event.get():
         if e.type == pygame.QUIT:
             game_over = True
@@ -339,8 +341,8 @@ while not game_over:
     
     key_pressed = pygame.key.get_pressed()
 
-    if player.position[0] >= screen.get_width() // 2 and key_pressed[pygame.K_RIGHT]:
-        total_distance = background.advance(player, total_distance)
+    if player.position[0] >= screen.get_width() // 2 and key_pressed[pygame.K_RIGHT] and not defeated:
+        world_advance = player.speed - 1
 
     elif key_pressed[pygame.K_RIGHT]:
         player.advance()
@@ -353,8 +355,8 @@ while not game_over:
 
     button_pressed = pygame.mouse.get_pressed()
 
-    if player.position[0] >= screen.get_width() // 2 and button_pressed[0] and pygame.mouse.get_pos()[0] > screen.get_width() / 2:
-        total_distance = background.advance(player, total_distance)
+    if player.position[0] >= screen.get_width() // 2 and button_pressed[0] and pygame.mouse.get_pos()[0] > screen.get_width() / 2 and not defeated:
+        world_advance = player.speed - 1
     
     elif button_pressed[0] and pygame.mouse.get_pos()[0] < screen.get_width() / 2:
         player.retreat()
@@ -363,7 +365,7 @@ while not game_over:
         player.advance()
 
     # Draw Background
-    background.update()
+    total_distance = background.update(world_advance, total_distance)
     background.draw(screen)
 
     # Text Update
@@ -375,7 +377,7 @@ while not game_over:
     screen.blit(coins_message, (screen.get_width() - coins_message.get_width() - 10, 20 + distance_message.get_height()))
 
     # Clouds Update
-    if random.randint(0, 500) < 2:
+    if random.randint(0, 10000) < cloud_likelihood:
         clouds.append(Cloud())
     for c in clouds:
         c.update()
@@ -384,7 +386,7 @@ while not game_over:
             clouds.remove(c)
     
     # Platform Update
-    if random.randint(0, 500) < platform_likelihood:
+    if random.randint(0, 10000) < platform_likelihood:
         step_clouds.append(Step_Cloud())
     for s in step_clouds:
         s.update()
@@ -393,13 +395,13 @@ while not game_over:
             step_clouds.remove(s)
 
     # Check if defeated
-    if defeated == True:
+    if defeated:
         screen.blit(defeat_message, (screen.get_width() // 2 - defeat_message.get_width() // 2, screen.get_height() // 2))
         pygame.display.update()
         continue
 
     # Coin Update
-    if random.randint(0, 500) < coin_likelihood + (total_distance // 5000):
+    if random.randint(0, 10000) < coin_likelihood + (total_distance // 5000):
         coins.append(Coin(screen, player))
 
     for c in coins:
@@ -410,11 +412,11 @@ while not game_over:
             player.coins_collected += 1
 
     # Enemy Update
-    if random.randint(0, 500) < enemy_likelihood + (total_distance // 5000):
+    if random.randint(0, 10000) < enemy_likelihood + (total_distance // 5000):
         enemy.append(Enemy(0))
-    elif random.randint(0, 500) < (enemy_likelihood + (total_distance // 5000)) // 2 and total_distance > 10000:
+    elif random.randint(0, 10000) < (enemy_likelihood + (total_distance // 5000)) // 2 and total_distance > 10000:
         enemy.append(Enemy(1))
-    elif random.randint(0, 500) < (enemy_likelihood + (total_distance // 5000)) // 5 and total_distance > 25000:
+    elif random.randint(0, 10000) < (enemy_likelihood + (total_distance // 5000)) // 5 and total_distance > 25000:
         enemy.append(Enemy(2))
     
     for e in enemy:
