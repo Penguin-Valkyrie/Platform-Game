@@ -29,36 +29,50 @@ world_advance = 0
 
 # Functions
 
-def collision_detection(object1, object2, screen = None, object1BottomOnly = False):
+def collision_detection(object1, object2, screen = None, object1BottomOnly = False, object1NegativeBuffer = 0, object2NegativeBuffer = 0):
+    # Treat comments as headers
     # Object1 is the object whose corners are being tested
     # Object2 is the object being hit
 
     if screen is not None:
-        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0], object2.position[1], 5, 5])
-        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0] + object2.image.get_width(), object2.position[1], 5, 5])
-        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0] + object2.image.get_width(), object2.position[1] + object2.image.get_height(), 5, 5])
-        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0], object2.position[1] + object2.image.get_height(), 5, 5])
-        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0], object1.position[1], 5, 5])
-        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0] + object1.image.get_width(), object1.position[1], 5, 5])
-        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0] + object1.image.get_width(), object1.position[1] + object1.image.get_height(), 5, 5])
-        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0], object1.position[1] + object1.image.get_height(), 5, 5])
+        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0] + object1NegativeBuffer, object1.position[1] + object1NegativeBuffer, 5, 5])
+        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0] + (object1.image.get_width() / 2), object1.position[1] + object1NegativeBuffer, 5, 5])
+        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0] + object1.image.get_width() - object1NegativeBuffer, object1.position[1] + object1NegativeBuffer, 5, 5])
+        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0] + object1.image.get_width() - object1NegativeBuffer, object1.position[1] + object1.image.get_height() - object1NegativeBuffer, 5, 5])
+        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0] + object1NegativeBuffer, object1.position[1] + object1.image.get_height() - object1NegativeBuffer, 5, 5])
+        pygame.draw.rect(screen, (255, 255, 255), [object1.position[0] + (object1.image.get_width() / 2), object1.position[1] + (object1.image.get_height() / 2), 5, 5])
+        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0] + object2NegativeBuffer, object2.position[1] + object2NegativeBuffer, 5, 5])
+        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0] + object2.image.get_width() - object2NegativeBuffer, object2.position[1] + object2NegativeBuffer, 5, 5])
+        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0] + object2.image.get_width() - object2NegativeBuffer, object2.position[1] + object2.image.get_height() - object2NegativeBuffer, 5, 5])
+        pygame.draw.rect(screen, (0, 0, 0), [object2.position[0] + object2NegativeBuffer, object2.position[1] + object2.image.get_height() - object2NegativeBuffer, 5, 5])
 
     # First two are top left corner of Object1, then they move clockwise
-    if (object1BottomOnly == False) and (object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] <= object2.position[1] + object2.image.get_height() - 2 or \
-        object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] <= object2.position[1] + object2.image.get_height() - 2 or \
-        object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height() - 2 or \
-        object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height()):
+    # Final test is center
+    if (object1BottomOnly == False) and \
+        (object2.position[0] + object2NegativeBuffer <= object1.position[0] + object1NegativeBuffer <= object2.position[0] + object2.image.get_width() - object2NegativeBuffer and \
+        object2.position[1] + object2NegativeBuffer <= object1.position[1] + object1NegativeBuffer <= object2.position[1] + object2.image.get_height() - object2NegativeBuffer or \
+            # Top Center (below)
+        object2.position[0] + object2NegativeBuffer <= object1.position[0] + (object1.image.get_width() / 2) <= object2.position[0] + object2.image.get_width() - object2NegativeBuffer and \
+        object2.position[1] + object2NegativeBuffer <= object1.position[1] + object1NegativeBuffer <= object2.position[1] + object2.image.get_height() - object2NegativeBuffer or \
+            # Top Right (below)
+        object2.position[0] + object2NegativeBuffer <= object1.position[0] + object1.image.get_width() - object1NegativeBuffer <= object2.position[0] + object2.image.get_width() - object2NegativeBuffer and \
+        object2.position[1] + object2NegativeBuffer <= object1.position[1] + object1NegativeBuffer <= object2.position[1] + object2.image.get_height() - object2NegativeBuffer or \
+            # Bottom Right (below)
+        object2.position[0] + object2NegativeBuffer <= object1.position[0] + object1.image.get_width() - object1NegativeBuffer <= object2.position[0] + object2.image.get_width() - object2NegativeBuffer and \
+        object2.position[1] + object2NegativeBuffer <= object1.position[1] + object1.image.get_height() - object1NegativeBuffer <= object2.position[1] + object2.image.get_height() - object2NegativeBuffer or \
+            # Bottom Left (below)
+        object2.position[0] + object2NegativeBuffer <= object1.position[0] + object1NegativeBuffer <= object2.position[0] + object2.image.get_width() - object2NegativeBuffer and \
+        object2.position[1] + object2NegativeBuffer <= object1.position[1] + object1.image.get_height() - object1NegativeBuffer <= object2.position[1] + object2.image.get_height() - object2NegativeBuffer or \
+            # Center (below)
+        object2.position[0] + object2NegativeBuffer <= object1.position[0] + (object1.image.get_width() / 2) <= object2.position[0] + object2.image.get_width() - object2NegativeBuffer and \
+        object2.position[1] + object2NegativeBuffer <= object1.position[1] + (object1.image.get_height() / 2) <= object2.position[1] + object2.image.get_height() - object2NegativeBuffer):
 
         return True
 
-    elif(object1BottomOnly == True) and (object2.position[0] + 2 <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height() - 2 or \
-        object2.position[0] + 2 <= object1.position[0] <= object2.position[0] + object2.image.get_width() - 2 and \
-        object2.position[1] + 2 <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height()):
+    elif(object1BottomOnly == True) and (object2.position[0] + object2NegativeBuffer <= object1.position[0] + object1.image.get_width() <= object2.position[0] + object2.image.get_width() - object2NegativeBuffer and \
+        object2.position[1] + object2NegativeBuffer <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height() - object2NegativeBuffer or \
+        object2.position[0] + object2NegativeBuffer <= object1.position[0] <= object2.position[0] + object2.image.get_width() - object2NegativeBuffer and \
+        object2.position[1] + object2NegativeBuffer <= object1.position[1] + object1.image.get_height() <= object2.position[1] + object2.image.get_height()):
 
         return True
 
@@ -69,9 +83,10 @@ def collision_detection(object1, object2, screen = None, object1BottomOnly = Fal
 class Player():
     def __init__(self):
         self.health = 5
-        self.image = pygame.image.load('images/character.png')
+        self.image = pygame.image.load('images/character1.png')
         self.image_flipped = pygame.transform.flip(self.image, True, False)
         self.position = [100, game_floor - self.image.get_height()]
+        self.collision_buffer = 15
         self.forward = True # False if moving to the left
         self.can_jump = True
         self.jumping = False
@@ -127,7 +142,7 @@ class Player():
             self.position[1] -= self.jumping_speed * (((self.position[1] + self.image.get_width()) / self.floor) ** 1.75)
         else:
             for p in platforms:
-                if collision_detection(self, p, screen, True):
+                if collision_detection(self, p, screen, True, self.collision_buffer):
                     self.can_jump = True
                     self.floor = self.position[1] + self.image.get_height()
                     return
@@ -293,6 +308,7 @@ class Coin():
         self.position.append(screen.get_width() + 100)
         self.position.append(game_floor - player.image.get_height() - (player.jump_height * .75))
         self.speed = player.speed
+        self.collision_buffer = 5
 
     def update(self):
         self.position[0] -= world_advance
@@ -407,7 +423,7 @@ while not game_over:
     for c in coins:
         c.update()
         c.draw(screen)
-        if collision_detection(player, c):
+        if collision_detection(player, c, screen, False, player.collision_buffer, c.collision_buffer):
             coins.remove(c)
             player.coins_collected += 1
 
