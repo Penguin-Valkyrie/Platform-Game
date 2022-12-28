@@ -1,4 +1,5 @@
 import pygame
+import NonPlayerClasses as npc
 
 pygame.init()
 
@@ -22,3 +23,5 @@ cloud_likelihood = 30 #if random.randint(0, 10000) < cloud_likelihood
 defeated = False
 defeat_message = font.render("Defeated!", True, (255, 255, 255))
 world_advance = 0
+clouds = []
+clouds.append(npc.Cloud(screen))

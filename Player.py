@@ -1,5 +1,5 @@
 import pygame
-import GlobalVariables
+import GlobalVariables as gv
 import CollisionDetection
 
 class Player():
@@ -7,13 +7,13 @@ class Player():
         self.health = 5
         self.image = pygame.image.load('images/character1.png')
         self.image_flipped = pygame.transform.flip(self.image, True, False)
-        self.position = [100, GlobalVariables.game_floor - self.image.get_height()]
+        self.position = [100, gv.game_floor - self.image.get_height()]
         self.collision_buffer = 15
         self.forward = True # False if moving to the left
         self.can_jump = True
         self.jumping = False
         self.jump_height = 300
-        self.floor = GlobalVariables.game_floor
+        self.floor = gv.game_floor
         self.speed = 4
         self.jumping_speed = 12
         self.fireballs = []
@@ -35,7 +35,7 @@ class Player():
 
     def advance(self):
         self.forward = True
-        if self.position[0] <= GlobalVariables.screen.get_width() // 2:
+        if self.position[0] <= gv.screen.get_width() // 2:
             self.position[0] += self.speed
 
     def retreat(self):
@@ -75,7 +75,7 @@ class Player():
 
         if self.position[1] + self.image.get_height() > self.floor:
             self.position[1] = self.floor - self.image.get_height()
-            if self.floor == GlobalVariables.game_floor:
+            if self.floor == gv.game_floor:
                 self.can_jump = True
             else:
-                self.floor = GlobalVariables.game_floor
+                self.floor = gv.game_floor
