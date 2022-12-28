@@ -30,8 +30,8 @@ class Player():
             screen.blit(self.image_flipped, self.position)
         
         # Draw Attack Buffer
-        pygame.draw.rect(screen, (255, 0, 0), [self.position[0] - 15, self.position[1], 10, 100])
-        pygame.draw.rect(screen, (0, 0, 0), [self.position[0] - 15, self.position[1], 10, (self.attack_buffer / 240) * 100])
+        pygame.draw.rect(screen, (200, 0, 0), [self.position[0], self.position[1], 10, 100])
+        pygame.draw.rect(screen, (0, 0, 0), [self.position[0], self.position[1], 10, (self.attack_buffer / 240) * 100])
 
     def advance(self):
         self.forward = True
