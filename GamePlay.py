@@ -14,6 +14,7 @@ class GameInstance:
         self.enemy = []
         self.step_clouds = []
         self.coins = []
+        self.hearts = []
         self.distance_message = gv.font.render('Distance: ' + str(int(gv.total_distance // 1)), True, (255, 255, 255))
         self.health_message = gv.font.render('Health: ' + str(self.player.health), True, (255, 255, 255))
         self.coins_message = gv.font.render('Coins: ' + str(self.player.coins_collected), True, (255, 255, 255))
@@ -89,6 +90,9 @@ class GameInstance:
             self.coins.append(npc.Coin(gv.screen, self.player))
         if random.randint(0, 10000) < gv.platform_likelihood:
             self.step_clouds.append(npc.Step_Cloud(gv.screen))
+        if random.randint(0, 10000) < gv.heart_likelihood:
+            self.hearts.append(npc.Heart(gv.screen, self.player))
+
 
         for s in self.step_clouds:
             s.update()
@@ -100,6 +104,16 @@ class GameInstance:
             if CollisionDetection.collision_detection(self.player, c, 2, None, False, self.player.collision_buffer, c.collision_buffer):
                 self.coins.remove(c)
                 self.player.coins_collected += 1
+            if c.position[0] < 0 - c.image.get_width() and self.coins.__contains__(c):
+                self.coins.remove(c)
+
+        for h in self.hearts:
+            h.update()
+            if CollisionDetection.collision_detection(self.player, h, 2, None, False, self.player.collision_buffer, h.collision_buffer):
+                self.hearts.remove(h)
+                self.player.health += 1
+            if h.position[0] < 0 - h.image.get_width() and self.hearts.__contains__(h):
+                self.hearts.remove(h)
 
         if random.randint(0, 10000) < gv.enemy_likelihood + (gv.total_distance // 5000):
             self.enemy.append(npc.Enemy(0, gv.screen))
@@ -113,7 +127,7 @@ class GameInstance:
             if e.health <= 0:
                 self.enemy.remove(e)
                 continue
-            if CollisionDetection.collision_detection(self.player, e, 1, gv.screen, False, self.player.collision_buffer):
+            if CollisionDetection.collision_detection(self.player, e, 1, None, False, self.player.collision_buffer):
                 self.player.health -= 1
                 self.enemy.remove(e)
 
@@ -150,6 +164,8 @@ class GameInstance:
             s.draw(gv.screen)
         for c in self.coins:
             c.draw(gv.screen)
+        for h in self.hearts:
+            h.draw(gv.screen)
 
         # Draw Enemies
         for e in self.enemy:

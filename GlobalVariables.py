@@ -20,6 +20,7 @@ enemy_likelihood = 60 #if random.randint(0, 10000) < enemy_likelihood
 coin_likelihood = 40 #if random.randint(0, 10000) < coin_likelihood
 platform_likelihood = 10 #if random.randint(0, 10000) < platform_likelihood
 cloud_likelihood = 30 #if random.randint(0, 10000) < cloud_likelihood
+heart_likelihood = 10 #if random.randint(0, 10000) < cloud_likelihood
 defeated = False
 defeat_message = font.render("Defeated!", True, (255, 255, 255))
 world_advance = 0

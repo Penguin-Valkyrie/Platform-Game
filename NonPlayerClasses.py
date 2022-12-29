@@ -159,4 +159,19 @@ class Coin():
         self.position[0] -= gv.world_advance
 
     def draw(self, screen):
-        screen.blit(self.image, (self.position[0], self.position[1]))  
+        screen.blit(self.image, (self.position[0], self.position[1]))
+
+class Heart():
+    def __init__(self, screen, player):
+        self.image = pygame.image.load('images/heart.png')
+        self.position = []
+        self.position.append(screen.get_width() + 100)
+        self.position.append(gv.game_floor - player.image.get_height() - (player.jump_height + 25))
+        self.speed = player.speed
+        self.collision_buffer = 0
+
+    def update(self):
+        self.position[0] -= gv.world_advance
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.position[0], self.position[1]))
