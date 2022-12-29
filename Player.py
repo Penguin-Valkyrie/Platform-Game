@@ -33,6 +33,14 @@ class Player():
         pygame.draw.rect(screen, (200, 0, 0), [self.position[0], self.position[1], 10, 100])
         pygame.draw.rect(screen, (0, 0, 0), [self.position[0], self.position[1], 10, (self.attack_buffer / 240) * 100])
 
+        # Draw Attacks
+        for f in self.fireballs:
+            f.draw(gv.screen)
+        for a in self.arcane_magic:
+            a.draw(gv.screen)
+        for h in self.holy:
+            h.draw(gv.screen)
+
     def advance(self):
         self.forward = True
         if self.position[0] <= gv.screen.get_width() // 2:
@@ -48,7 +56,7 @@ class Player():
         self.can_jump = False
         self.jumping = True
 
-    def update(self, platforms):              
+    def update(self, platforms, enemies):              
 
         if self.coins_collected >= 20 and self.coins_collected % 20 == 0 and self.coins_speed_increase:
             self.coins_speed_increase = False
@@ -79,3 +87,41 @@ class Player():
                 self.can_jump = True
             else:
                 self.floor = gv.game_floor
+
+        # Fireball Update
+        for f in self.fireballs:
+            f.update()
+            for e in enemies:
+                if CollisionDetection.collision_detection(f, e):
+                    e.health -= 1
+                    if self.fireballs.__contains__(f):
+                        self.fireballs.remove(f)
+
+                if f.position[0] > gv.screen.get_width() and self.fireballs.__contains__(f):
+                    self.fireballs.remove(f)
+
+        # Arcane Update
+        for a in self.arcane_magic:
+            a.update()
+            for e in enemies:
+                if CollisionDetection.collision_detection(a, e):
+                    e.health -= 1
+                    if self.arcane_magic.__contains__(a):
+                        self.arcane_magic.remove(a)
+
+            if a.position[0] > gv.screen.get_width() and self.arcane_magic.__contains__(a):
+                    self.arcane_magic.remove(a)
+
+        # Holy Update
+        for h in self.holy:
+            h.update()
+            for e in enemies:
+                if CollisionDetection.collision_detection(h, e):
+                    e.health -= 1
+                    h.health -= 1
+
+            if h.position[0] > gv.screen.get_width() and self.holy.__contains__(h):
+                    self.holy.remove(h)
+            
+            if h.health <= 0 and self.holy.__contains__(h):
+                self.holy.remove(h)
