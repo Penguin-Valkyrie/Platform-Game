@@ -160,7 +160,7 @@ class Cloud():
 class Step_Cloud():
     def __init__(self, screen):
         self.image = pygame.image.load('images/Platform Cloud.png')
-        self.position = [screen.get_width() + self.image.get_width(), screen.get_height() - self.image.get_height() - 200]
+        self.position = [screen.get_width() + self.image.get_width(), gv.game_floor - 200]
         self.width = self.image.get_width()
         self.height = self.image.get_height()
         self.collision_buffer = 3
@@ -189,11 +189,12 @@ class Background():
 
     def resize(self, window_x, window_y):
         while self.image.get_height() <= window_y and self.image.get_width <= window_x:
-            self.image = pygame.transform.scale(self.image, (self.image.get_width() * 1.05, self.image.get_height() * 1.05))
+            self.image = pygame.transform.scale(self.image, (self.image.get_width() * 1.1, self.image.get_height() * 1.1))
 
     def draw(self, screen):
         screen.blit(self.image, (self.position, 0))
         screen.blit(self.image, (self.position + self.image.get_width(), 0))
+        screen.blit(self.image, (self.position + (self.image.get_width() * 2), 0))
 
 class Coin():
     def __init__(self, screen, player):

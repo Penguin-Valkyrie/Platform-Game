@@ -130,45 +130,10 @@ class Player():
         if self.coins_collected % 20 == 1:
             self.coins_speed_increase = True
 
+        # Attack Update
+
         if self.attack_buffer > 0:
             self.attack_buffer -= 1
-
-        # Jumping Update:
-        if self.jumping:
-            self.jumping_image_speed -= gv.clock.get_time()
-            if self.image_jumping_index < 3:
-                self.jumping_image_speed -= gv.clock.get_time() * 3
-                if self.jumping_image_speed <= 0:
-                    self.image_jumping_index += 1
-                    self.jumping_image_speed = 100
-            else:
-                self.position[1] -= self.jumping_speed * (((self.position[1] + self.height) / self.floor) ** 1.75)
-        else:
-            for p in platforms:
-                if CollisionDetection.collision_detection(self, p, 2, True, self.collision_buffer):
-                    self.can_jump = True
-                    self.image_jumping_index = 0
-                    self.floor = self.position[1] + self.height
-                    return
-            if self.image_jumping_index < 6:
-                self.jumping_image_speed -= gv.clock.get_time()
-                if self.jumping_image_speed <= 0:
-                    self.jumping_image_speed = 100
-                    self.image_jumping_index += 1
-            self.position[1] += self.jumping_speed * (((self.position[1] + self.height) / self.floor) ** 1.75)
-
-        if self.position[1] <= self.floor - self.jump_height:
-            self.jumping = False
-
-        if self.position[1] + self.height > self.floor:
-            self.position[1] = self.floor - self.height
-            if self.floor == gv.game_floor:
-                self.can_jump = True
-                self.image_jumping_index = 0
-            else:
-                self.floor = gv.game_floor
-
-        # Attack Update
 
         if self.attacking:
             self.attack_image_speed -= gv.clock.get_time()
@@ -200,3 +165,38 @@ class Player():
 
             if a.position[1] > gv.game_floor and self.attacks.__contains__(a):
                 self.attacks.remove(a)
+
+        # Jumping Update:
+        if self.jumping:
+            self.jumping_image_speed -= gv.clock.get_time()
+            if self.image_jumping_index < 3:
+                self.jumping_image_speed -= gv.clock.get_time() * 3
+                if self.jumping_image_speed <= 0:
+                    self.image_jumping_index += 1
+                    self.jumping_image_speed = 100
+            else:
+                self.position[1] -= self.jumping_speed * (((self.position[1] + self.height) / self.floor) ** 1.75)
+        else:
+            if self.image_jumping_index < 6:
+                self.jumping_image_speed -= gv.clock.get_time()
+                if self.jumping_image_speed <= 0:
+                    self.jumping_image_speed = 100
+                    self.image_jumping_index += 1
+            for p in platforms:
+                if CollisionDetection.collision_detection(self, p, 2, True, self.collision_buffer):
+                    self.can_jump = True
+                    self.image_jumping_index = 0
+                    self.floor = self.position[1] + self.height
+                    return
+            self.position[1] += self.jumping_speed * (((self.position[1] + self.height) / self.floor) ** 1.75)
+
+        if self.position[1] <= self.floor - self.jump_height:
+            self.jumping = False
+
+        if self.position[1] + self.height > self.floor:
+            self.position[1] = self.floor - self.height
+            self.image_jumping_index = 0
+            if self.floor == gv.game_floor:
+                self.can_jump = True
+            else:
+                self.floor = gv.game_floor
