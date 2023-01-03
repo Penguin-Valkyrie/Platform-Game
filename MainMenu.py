@@ -22,7 +22,7 @@ class MainMenu:
         for c in self.clouds:
             c.update()
 
-        self.background.update(gv.world_advance, gv.total_distance)
+        self.background.update(gv.world_advance, gv.score)
 
         return self
 
@@ -36,7 +36,3 @@ class MainMenu:
 
         for c in self.clouds:
             c.draw(gv.screen)
-
-    def run(self):
-        self.update(gv.screen)
-        self.draw()

@@ -15,7 +15,7 @@ class GameInstance:
         self.step_clouds = []
         self.coins = []
         self.hearts = []
-        self.distance_message = gv.font.render('Distance: ' + str(int(gv.total_distance // 1)), True, (255, 255, 255))
+        self.distance_message = gv.font.render('Distance: ' + str(int(gv.score // 1)), True, (255, 255, 255))
         self.health_message = gv.font.render('Health: ' + str(self.player.health), True, (255, 255, 255))
         self.coins_message = gv.font.render('Coins: ' + str(self.player.coins_collected), True, (255, 255, 255))
 
@@ -28,24 +28,27 @@ class GameInstance:
         for e in events:
             if e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_f:
-                    self.player.fireballs.append(npc.Fireball(Vector2(self.player.position), self.player))
+                    self.player.attack(npc.Fireball(Vector2(self.player.position), self.player))
                 
                 elif e.key == pygame.K_d and self.player.attack_buffer <= 0:
-                    self.player.arcane_magic.append(npc.Arcane_Magic(Vector2(self.player.position), self.player, True))
-                    self.player.arcane_magic.append(npc.Arcane_Magic(Vector2(self.player.position), self.player, False))
-                    self.player.attack_buffer = 240
+                    self.player.attack(npc.Arcane_Magic(Vector2(self.player.position), self.player, True))
+                    self.player.attack(npc.Arcane_Magic(Vector2(self.player.position), self.player, False))
 
                 elif e.key == pygame.K_s and self.player.attack_buffer <= 0:
-                    self.player.holy.append(npc.Holy(Vector2(self.player.position), self.player))
-                    self.player.attack_buffer = 240
+                    self.player.attack(npc.Holy(Vector2(self.player.position), self.player))
+
+                elif e.key == pygame.K_a and self.player.attack_buffer <= 0:
+                    self.player.attack(npc.Ray(Vector2(self.player.position), self.player))
+
+            if e.type == pygame.WINDOWRESIZED:
+                self.background.resize(e.x, e.y)
             
         key_pressed = pygame.key.get_pressed()
 
-        if self.player.position[0] >= gv.screen.get_width() // 2 and key_pressed[pygame.K_RIGHT] and not gv.defeated:
-            gv.world_advance = self.player.speed
-
-        elif key_pressed[pygame.K_RIGHT]:
+        if key_pressed[pygame.K_RIGHT]:
             self.player.advance()
+            if self.player.position[0] >= gv.screen.get_width() // 2 and not self.player.attacking and not gv.defeated:
+                gv.world_advance = self.player.speed
 
         if key_pressed[pygame.K_LEFT]:
             self.player.retreat()
@@ -64,8 +67,11 @@ class GameInstance:
         elif button_pressed[0] and pygame.mouse.get_pos()[0] > gv.screen.get_width() / 2:
             self.player.advance()
 
+        # Update Background
+        gv.score = self.background.update(gv.world_advance, gv.score)
+
         # Update Text
-        self.distance_message = gv.font.render('Distance: ' + str(int(gv.total_distance // 1)), True, (255, 255, 255))
+        self.distance_message = gv.font.render('Score: ' + str(int(gv.score // 1)), True, (255, 255, 255))
         self.health_message = gv.font.render('Health: ' + str(self.player.health), True, (255, 255, 255))
         self.coins_message = gv.font.render('Coins: ' + str(self.player.coins_collected), True, (255, 255, 255))
 
@@ -86,7 +92,7 @@ class GameInstance:
             gv.clouds.append(npc.Cloud(gv.screen))
         if random.randint(0, 10000) < gv.platform_likelihood:
             self.step_clouds.append(npc.Step_Cloud(gv.screen))
-        if random.randint(0, 10000) < gv.coin_likelihood + (gv.total_distance // 5000):
+        if random.randint(0, 10000) < gv.coin_likelihood + (gv.score // 5000):
             self.coins.append(npc.Coin(gv.screen, self.player))
         if random.randint(0, 10000) < gv.platform_likelihood:
             self.step_clouds.append(npc.Step_Cloud(gv.screen))
@@ -101,25 +107,27 @@ class GameInstance:
 
         for c in self.coins:
             c.update()
-            if CollisionDetection.collision_detection(self.player, c, 2, None, False, self.player.collision_buffer, c.collision_buffer):
+            if CollisionDetection.collision_detection(self.player, c, 2, False, self.player.collision_buffer, c.collision_buffer):
                 self.coins.remove(c)
                 self.player.coins_collected += 1
+                gv.score += 100
             if c.position[0] < 0 - c.image.get_width() and self.coins.__contains__(c):
                 self.coins.remove(c)
 
         for h in self.hearts:
             h.update()
-            if CollisionDetection.collision_detection(self.player, h, 2, None, False, self.player.collision_buffer, h.collision_buffer):
+            if CollisionDetection.collision_detection(self.player, h, 2, False, self.player.collision_buffer, h.collision_buffer):
                 self.hearts.remove(h)
                 self.player.health += 1
+                gv.score += 200
             if h.position[0] < 0 - h.image.get_width() and self.hearts.__contains__(h):
                 self.hearts.remove(h)
 
-        if random.randint(0, 10000) < gv.enemy_likelihood + (gv.total_distance // 5000):
+        if random.randint(0, 10000) < gv.enemy_likelihood + (gv.score // 500):
             self.enemy.append(npc.Enemy(0, gv.screen))
-        elif random.randint(0, 10000) < (gv.enemy_likelihood + (gv.total_distance // 5000)) // 2 and gv.total_distance > 10000:
+        elif random.randint(0, 10000) < (gv.enemy_likelihood + (gv.score // 500)) // 2 and gv.score > 10000:
             self.enemy.append(npc.Enemy(1, gv.screen))
-        elif random.randint(0, 10000) < (gv.enemy_likelihood + (gv.total_distance // 5000)) // 5 and gv.total_distance > 25000:
+        elif random.randint(0, 10000) < (gv.enemy_likelihood + (gv.score // 500)) // 5 and gv.score > 25000:
             self.enemy.append(npc.Enemy(2, gv.screen))
         
         for e in self.enemy:
@@ -127,7 +135,7 @@ class GameInstance:
             if e.health <= 0:
                 self.enemy.remove(e)
                 continue
-            if CollisionDetection.collision_detection(self.player, e, 1, None, False, self.player.collision_buffer):
+            if CollisionDetection.collision_detection(self.player, e, 1, False, self.player.collision_buffer, e.collision_buffer):
                 self.player.health -= 1
                 self.enemy.remove(e)
 
@@ -138,7 +146,6 @@ class GameInstance:
 
     def draw(self, screen):
         # Draw Background
-        gv.total_distance = self.background.update(gv.world_advance, gv.total_distance)
         self.background.draw(gv.screen)
 
         # Draw Text
